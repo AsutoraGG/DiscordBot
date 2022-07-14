@@ -28,7 +28,9 @@ import r6 from 'r6s-stats-api';
 
 
 //#region const
-const commits = new FacepunchCommits({interval: 5000});
+const commits = new FacepunchCommits({
+    interval: 1000
+});
 const RPC = new discordrpc.Client({ transport: 'ipc' });
 const __dirname = url.fileURLToPath(new URL('.', import.meta.url));
 const C = JSON.parse(await readFile(new URL('./config.json', import.meta.url)));
@@ -198,40 +200,41 @@ client.on('messageCreate', (msg) => {
     if (msg.author.bot) return;
     if (!msg.content.startsWith(C.discord.PREFIX)) return;
     let args = msg.content.substring(C.discord.PREFIX.length).split(" ");
-
+    const rustrebot = "rust_reboot"
 
     rustplus.getMapMarkers((message) => {
         let cargo = false;
         if(cargo === false) {
-        for(let marker of message.response.mapMarkers.markers) {
-            if (marker.type === 5) {
+            for(let marker of message.response.mapMarkers.markers) {
+                if (marker.type === '5') {
                 cargo = true;
-                print('INFO', "Cargoを確認。cargoをtrueにしました", false)
+                print('RUST', "Cargoを確認。cargoをtrueにしました", false)
                 break;
-            };
+            }
             if(cargo === true) {
                 if(C.rp.notification.cargo === true) {
-                    print('INFO', "Cargoシップがスポーンしました", true);
+                    print('RUST', "Cargoシップがスポーンしました", true);
                 } else {
-                    print('INFO', "Cargoシップがスポーンしました", false);
+                    print('RUST', "Cargoシップがスポーンしました", false);
                 }
             };
-        };       
+        }
+           
         } else {
             let nocargo = true;
             for(let marker of message.response.mapMarkers.markers) {
                 if (marker.type === 5) {
                     nocargo = false;
-                    print('INFO', "Cargoは見えなくなりました。nocargoをfalseに切り替え", false);
+                    print('RUST', "Cargoは見えなくなりました。nocargoをfalseに切り替え", false);
                     break;
                 }
             };
             if(nocargo === false) {
                 nocargo = false;
                 if(C.rp.notification.cargo === true) {
-                    print('INFO', "Cargoシップはマップから消えました", true);
+                    print('RUST', "Cargoシップはマップから消えました", true);
                 } else {
-                    print('INFO', "Cargoシップはマップから消えました", false);
+                    print('RUST', "Cargoシップはマップから消えました", false);
                 }
             };
         }
@@ -267,9 +270,30 @@ client.on('messageCreate', (msg) => {
             connection.subscribe(player);
             print('INFO', `ez.mp3を再生`, false);
         break;
+        case "getsherry":
+            const sherryembed = new MessageEmbed()
+             .setColor('AQUA')
+             .setTitle('また来週～!')
+             .setImage('http://www.conatsu.com/sherry/sherry-up1.JPG')
+
+            const loadingsherryembed = new MessageEmbed()
+             .setColor('BLUE')
+             .setTitle('今回のお話についてシェリーさんのご意見は?')
+             .setImage('http://www.conatsu.com/sherry/sherry-long.JPG')
+             
+            
+            msg.channel.send({embeds: [loadingsherryembed]}).then(e => {
+                setTimeout(function () {
+                    e.edit({ embeds: [sherryembed] }).then(() => {
+                     print('INFO', "シェリーの一言を送信!", false);
+                    })
+                }, 3500);
+
+            })
+        break;
     };
 
-    commits.subscribeToAll(commit => {
+    commits.subscribeToRepository(rustrebot, commit => {
         const testcommit = new MessageEmbed()
          .setColor("RED")
          .setTimestamp(`${commit.created}`)
@@ -281,7 +305,7 @@ client.on('messageCreate', (msg) => {
            { name: `**コミット内容**`, value: `${commit.message}`}
          )
        print('INFO', `Facepunch Commitに更新がありました。by: ${commit.user.name}`, false);
-       msg.channel.send({ embeds: [testcommit], content: "@everyone"});
+       msg.channel.send({ embeds: [testcommit], content: "@here"});
     });
 });
 
@@ -305,7 +329,8 @@ client.on('interactionCreate', async interaction => {
           { name: "getserverinfo", value: "現在登録中のサーバー情報を取得(url,map,サーバー人数,人数待ち,マップ画像)"},
           { name: "getgamedetail", value: "Steamからゲームの情報を取得(値段、画像、開発元、プレイ中の人数)"},
           { name: "getr6info", value: "R6Sのプレイヤー情報を取得(プレイ時間、レベル、マッチ回数等々)"},
-          { name: "getsteamplayerinfo", value: "SteamIDを入力しSteam情報を取得します"}
+          { name: "getsteamplayerinfo", value: "SteamIDを入力しSteam情報を取得します"},
+          { name: "*getsherry", value: "今週のシェリーの一言!"}
         )
         const button = new MessageActionRow().addComponents(
             new MessageButton()
@@ -492,7 +517,7 @@ client.on('interactionCreate', async interaction => {
              .setURL(s.url)
              .setDescription("**SteamID**: " + s.steamID + "\n**アカウントを作成した日**: " + UnixtoDate(s.created) + "\n**最終ログイン時間**: " + UnixtoDate(s.lastLogOff))
 
-            if(s.personaState === 1) { 
+            if(s.personaState === 1) {
                 steamplayerinfoembed.addFields({
                     name: "現在のステータス", value: "🟢 Online", inline: true
                 }) 
@@ -519,20 +544,26 @@ client.on('interactionCreate', async interaction => {
                 print('INFO', "現在" + s.nickname + "はトレード中です", false)
             } else if(s.personaState === 6) {
                 steamplayerinfoembed.addFields({
-                    name: "現在のステータス", value: "🟢 ゲームをプレイ中", inline: true
+                    name: "現在のステータス", value: "🟢 " + s.gameExtraInfo + "をプレイ中", inline: true
                 })
-                print('INFO', "現在" + s.nickname + "はゲームをプレイ中です", false)
+                print('INFO', "現在" + s.nickname + "は**" + s.gameExtraInfo + "**をプレイ中です", false)
             };
             steamapi.getUserBans(steamid).then(b => {
                 if(b.vacBans += 0) {
-                    steamplayerinfoembed.addField('VACBAN情報', 'VACBANされているのを確認しました😩: ' + b.vacBans + '回', true);
-                    print('INFO', "VACBANをされているのを確認:" + b.vacBans + "回", false)
+                    steamplayerinfoembed.addFields({
+                        name: "VACBAN情報", value: 'VACBANされているのを確認しました😩: ' + b.vacBans + '個', inline: true
+                    })
+                    //steamplayerinfoembed.addField('VACBAN情報', 'VACBANされているのを確認しました😩: ' + b.vacBans + '個', true);
+                    print('INFO', "VACBANをされているのを確認:" + b.vacBans + "個", false)
                 } else if(b.vacBans === 0) {
-                    steamplayerinfoembed.addField('VACBAN情報', 'VACBANされていないのを確認しました🥳', true)
+                    steamplayerinfoembed.addFields({
+                        name: "VACBAN情報", value: 'VACBANされていないのを確認しました🥳', inline: true
+                    })
+                    //steamplayerinfoembed.addField('VACBAN情報', 'VACBANされていないのを確認しました🥳', true)
                     print('INFO', "VACBANをされていないのを確認", false)
                 };
                 if(b.gameBans += 0) {
-                    steamplayerinfoembed.addField('GAMEBAN情報', 'GAMEBANされているのを確認しました😩: ' + b.gameBans + '回', true)
+                    steamplayerinfoembed.addField('GAMEBAN情報', 'GAMEBANされているのを確認しました😩: ' + b.gameBans + '日前', true)
                     print('INFO', "GAMEBANをされているのを確認:" + b.daysSinceLastBan + "日前", false)
                 } else if(b.gameBans === 0) {
                     steamplayerinfoembed.addField('GAMEBAN情報', 'GAMEBANされていないのを確認しました🥳', true)
@@ -550,6 +581,9 @@ process.stdin.on('keypress', function (ch, key) {
     if(key.name == C.js.exitkey) {
         console.clear();
         process.exit(1);
+    } else if(key.name == 'c') {
+        console.log("Consoleをキレイさっぱりにします")
+        setTimeout(() => console.clear(), 5000)
     }
 });
 
