@@ -1,2 +1,2 @@
 # DiscordBot
-Private Bot
+Wkeyでプログラムを終了。Ckeyでコンソールをクリア
