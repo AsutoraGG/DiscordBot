@@ -1,0 +1,31 @@
+{
+    "rp": {
+        "ip": "ServerIP",
+        "port": "ServerPort",
+        "id": "SteamID",
+        "token": "Rust+PlayerToken",
+        "connect": true,
+        "notification": {
+            "cargo": true
+        }
+    },
+    "discord": {
+        "guild": "DiscordServerID",
+        "clientid": "DiscordBotApplicationID",
+        "PREFIX": "*",
+        "BOTTOKEN": "DiscordBotToken",
+        "inviteurl": "https://discord.com/api/oauth2/authorize?client_id=838044115454656532&permissions=2691954854&scope=bot%20applications.commands"
+    },
+    "js": {
+        "welcometext": " _     _  _______  ___      _______  _______  __   __  _______  __ \n| | _ | ||       ||   |    |       ||       ||  |_|  ||       ||  |\n| || || ||    ___||   |    |       ||   _   ||       ||    ___||  |\n|       ||   |___ |   |    |       ||  | |  ||       ||   |___ |  |\n|       ||    ___||   |___ |      _||  |_|  ||       ||    ___||__|\n|   _   ||   |___ |       ||     |_ |       || ||_|| ||   |___  __ \n|__| |__||_______||_______||_______||_______||_|   |_||_______||__|",
+        "waittime": 3900,
+        "exitkey": "w",
+        "rustmapapi": "RustMapApiKey",
+        "title": false
+    },
+    "steam": {
+        "token": "SteamAPIKey",
+        "rust": "252490",
+        "baseurl": "https://steamcommunity.com/profiles/"
+    }
+}
