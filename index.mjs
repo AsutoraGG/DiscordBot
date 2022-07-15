@@ -506,69 +506,65 @@ client.on('interactionCreate', async interaction => {
         
         steamapi.getUserSummary(steamid).then(s => {
             steamapi.getUserOwnedGames(steamid, C.steam.rust).then(c => {
-             const steamplayerinfoembed = new MessageEmbed()
-              .setColor('RANDOM')
-              .setThumbnail(s.avatar.large)
-              .setTitle("**" + s.nickname + "**の情報")
-              .setURL(s.url)
-              .setDescription("**SteamID**: " + s.steamID + "\n**アカウントを作成した日**: " + UnixtoDate(s.created) + "\n**最終ログイン時間**: " + UnixtoDate(s.lastLogOff) + "\nRustプレイ時間: " + mintohour(c[0].playTime) + "時間\n過去2週間のプレイ時間: " + mintohour(c[0].playTime2) + "時間")
+                steamapi.getUserBans(steamid).then(b => {
+                    const steamplayerinfoembed = new MessageEmbed()
+                     .setColor('RANDOM')
+                     .setThumbnail(s.avatar.large)
+                     .setTitle("**" + s.nickname + "**の情報")
+                     .setURL(s.url)
+                     .setDescription("**SteamID**: " + s.steamID + "\n**アカウントを作成した日**: " + UnixtoDate(s.created) + "\n**最終ログイン時間**: " + UnixtoDate(s.lastLogOff) + "\nRustプレイ時間: " + mintohour(c[0].playTime) + "時間\n過去2週間のプレイ時間: " + mintohour(c[0].playTime2) + "時間")
               
-              if(s.personaState === 1) {
+                    if(s.personaState === 1) {
                 steamplayerinfoembed.addFields({
                     name: "現在のステータス", value: "🟢 Online", inline: true
                 }) 
                 print('INFO', "現在" + s.nickname + "はオンラインです", false)
-            } else if(s.personaState === 0) {
+                    } else if(s.personaState === 0) {
                 steamplayerinfoembed.addFields({
                     name: "現在のステータス", value: "⚫ Offline", inline: true
                 })
                 print('INFO', "現在" + s.nickname + "はオフラインです", false)
-            } else if(s.personaState === 2 | s.personaState === 3) {
+                    } else if(s.personaState === 2 | s.personaState === 3) {
                 steamplayerinfoembed.addFields({
                     name: "現在のステータス", value: "🟠 退席中", inline: true
                 })
                 print('INFO', "現在" + s.nickname + "はオフラインです", false)
-            } else if(s.personaState === 4) {
+                    } else if(s.personaState === 4) {
                 steamplayerinfoembed.addFields({
                     name: "現在のステータス", value: "😴 放置中", inline: true
                 })
                 print('INFO', "現在" + s.nickname + "は放置中です", false)
-            } else if(s.personaState === 5) {
+                    } else if(s.personaState === 5) {
                 steamplayerinfoembed.addFields({
                     name: "現在のステータス", value: "📨 トレード中", inline: true
                 })
                 print('INFO', "現在" + s.nickname + "はトレード中です", false)
-            } else if(s.personaState === 6) {
+                    } else if(s.personaState === 6) {
                 steamplayerinfoembed.addFields({
                     name: "現在のステータス", value: "🟢 " + s.gameExtraInfo + "をプレイ中", inline: true
                 })
                 print('INFO', "現在" + s.nickname + "は**" + s.gameExtraInfo + "**をプレイ中です", false)
-            };
-            steamapi.getUserBans(steamid).then(b => {
-                if(b.vacBans += 0) {
-                    steamplayerinfoembed.addFields({
-                        name: "VACBAN情報", value: 'VACBANされているのを確認しました😩: ' + b.vacBans + '個', inline: true
-                    })
-                    //steamplayerinfoembed.addField('VACBAN情報', 'VACBANされているのを確認しました😩: ' + b.vacBans + '個', true);
-                    print('INFO', "VACBANをされているのを確認:" + b.vacBans + "個", false)
-                } else if(b.vacBans === 0) {
-                    steamplayerinfoembed.addFields({
-                        name: "VACBAN情報", value: 'VACBANされていないのを確認しました🥳', inline: true
-                    })
-                    //steamplayerinfoembed.addField('VACBAN情報', 'VACBANされていないのを確認しました🥳', true)
-                    print('INFO', "VACBANをされていないのを確認", false)
-                };
-                if(b.gameBans += 0) {
-                    steamplayerinfoembed.addField('GAMEBAN情報', 'GAMEBANされているのを確認しました😩: ' + b.gameBans + '日前', true)
-                    print('INFO', "GAMEBANをされているのを確認:" + b.daysSinceLastBan + "日前", false)
-                } else if(b.gameBans === 0) {
-                    steamplayerinfoembed.addField('GAMEBAN情報', 'GAMEBANされていないのを確認しました🥳', true)
-                    print('INFO', "GAMEBANをされていないのを確認", false)
-                };
+                    };
+                    if(b.vacBans += 0) {
+                      steamplayerinfoembed.addField('VACBAN', '🔴 VACBANあり: ' + b.vacBans + '個', true)
+                      print('INFO', "VACBANをされているのを確認:" + b.vacBans + "個", false)
+                    } else if(b.vacBans === 0) {
+                      steamplayerinfoembed.addField('VACBAN', '🟢 VACBANなし', true)
+                      print('INFO', "VACBANをされていないのを確認", false)
+                    };
+                    if(b.gameBans += 0) {
+                      steamplayerinfoembed.addField('GAMEBAN', '🔴 GAMEBANあり: ' + b.gameBans + '個', true)
+                      print('INFO', "GAMEBANをされているのを確認:" + b.daysSinceLastBan + "日前", false)
+                    } else if(b.gameBans === 0) {
+                      steamplayerinfoembed.addField('GAMEBAN', '🟢 GAMEBANなし', true)
+                      print('INFO', "GAMEBANをされていないのを確認", false)
+                    };
+                    if(c[0].playTime === '0') {
+                        print('ERROR', s.nickname + "は現在プレイ時間を非公開にしています。", false)
+                    };
+                    interaction.reply({ embeds: [steamplayerinfoembed] });
+                    print('INFO', `メッセージを送信しました(steamplayerinfoembed:` + s.nickname + ")", false);
             });
-            
-            interaction.reply({ embeds: [steamplayerinfoembed] });
-            print('INFO', `メッセージを送信しました(steamplayerinfoembed:` + s.nickname + ")", false);
             })
         });
     };
