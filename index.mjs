@@ -28,9 +28,6 @@ import r6 from 'r6s-stats-api';
 
 
 //#region const
-const commits = new FacepunchCommits({
-    interval: 1000
-});
 const RPC = new discordrpc.Client({ transport: 'ipc' });
 const __dirname = url.fileURLToPath(new URL('.', import.meta.url));
 const C = JSON.parse(await readFile(new URL('./config.json', import.meta.url)));
@@ -209,7 +206,6 @@ client.on('messageCreate', (msg) => {
     if (msg.author.bot) return;
     if (!msg.content.startsWith(C.discord.PREFIX)) return;
     let args = msg.content.substring(C.discord.PREFIX.length).split(" ");
-    const rustrebot = "rust_reboot"
 
     rustplus.getMapMarkers((message) => {
         let cargo = false;
@@ -306,21 +302,6 @@ client.on('messageCreate', (msg) => {
             });
         break;
     };
-
-    commits.subscribeToRepository(rustrebot, commit => {
-        const testcommit = new MessageEmbed()
-         .setColor("RED")
-         .setTimestamp(`${commit.created}`)
-         .setTitle(`🥳 **Commitに更新がありました**`)
-         .setURL(`https://commits.facepunch.com/r/${commit.repo}`)
-         .setThumbnail(`${commit.user.avatar}`)
-         .setDescription(`🪄 **コミットした人**: ${commit.user.name}\n🔑 **場所**: ${commit.repo}\n`)
-         .addFields(
-           { name: `**コミット内容**`, value: `${commit.message}`}
-         )
-       print('INFO', `Facepunch Commitに更新がありました。by: ${commit.user.name}`, false);
-       msg.channel.send({ embeds: [testcommit], content: "@here"});
-    });
 });
 
 client.on('interactionCreate', async interaction => {
@@ -390,7 +371,7 @@ client.on('interactionCreate', async interaction => {
              .setTitle('チーム情報を取得')
             
             for(let member of msg.response.teamInfo.members) {
-                console.log(`SteamID: ${member.steamId}` + ` APPID: ${C.steam.rust}`)
+                //console.log(`SteamID: ${member.steamId}` + ` APPID: ${C.steam.rust}`)
                 let description = "\n"; 
                 let f = `**${member.name} \n (${C.steam.baseurl}${member.steamId})**`;
                 let str = "**オンライン?:** " + member.isOnline + "\n" + "**生きている?:** " + member.isAlive;

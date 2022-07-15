@@ -19,7 +19,6 @@
     "chalk-animation": "^2.0.2",
     "discord-rpc": "^4.0.1",
     "discord.js": "^13.8.1",
-    "facepunch-commits": "^3.4.1",
     "keypress": "^0.2.1",
     "node-bash-title": "^0.0.2",
     "r6s-stats-api": "^1.0.1",
