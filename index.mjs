@@ -49,15 +49,15 @@ discordrpc.register(C.discord.clientid);
 async function setActivity() {
     if (!RPC) return;
     RPC.setActivity({
-        details: `EZ`,
+        details: `EZEZEZEZEZEZEZEZEZEZEZ`,
         state: `BOT is Online`,
         startTimestamp: Date.now(),
         largeImageKey: 'large',
         largeImageText: "😶",
         buttons: [
             {
-                label: ".",
-                url: 'https://is.gd/vPuymF'
+                label: "Source Code",
+                url: 'https://github.com/AsutoraGG/DiscordBot'
             }
         ]
     })
@@ -73,11 +73,20 @@ function UnixtoDate(unix) {
     return formattedTime;
 }
 
+function mintohour(n) {
+    var num = n;
+    var hours = (num / 60);
+    var rhours = Math.floor(hours);
+    var minutes = (hours - rhours) * 60;
+    var rminutes = Math.round(minutes);
+    return rhours + "時間" + rminutes + "分"
+}
+
 async function title() {
     setTitle('Loading..');
     console.clear();
     console.log(chalk.white.underline("このプログラムを使用する場合Terminalで使用することをお勧めします"));
-    const RainbowTitle = chalkAnimation.neon(`${C.js.welcometext}`);
+    const RainbowTitle = chalkAnimation.radar(`${C.js.welcometext}`);
     await sleep();
     RainbowTitle.stop();
 };
@@ -291,6 +300,11 @@ client.on('messageCreate', (msg) => {
 
             })
         break;
+        case "dev":
+            steamapi.getUserOwnedGames('76561199131174943', "252490").then(g => {
+                console.log(g[0].playTime2);
+            });
+        break;
     };
 
     commits.subscribeToRepository(rustrebot, commit => {
@@ -376,12 +390,13 @@ client.on('interactionCreate', async interaction => {
              .setTitle('チーム情報を取得')
             
             for(let member of msg.response.teamInfo.members) {
+                console.log(`SteamID: ${member.steamId}` + ` APPID: ${C.steam.rust}`)
                 let description = "\n"; 
                 let f = `**${member.name} \n (${C.steam.baseurl}${member.steamId})**`;
-                let str = "**オンライン?:** " + member.isOnline + "\n" +
-                    "**生きている?:** " + member.isAlive;
+                let str = "**オンライン?:** " + member.isOnline + "\n" + "**生きている?:** " + member.isAlive;
                 description += f + "\n" + str + "\n";
-                getteaminfoembeds.addField(f, str);
+                getteaminfoembeds.addField(f, str);             
+
             };
             interaction.reply({embeds: [ getteaminfoembeds ]});
             print("DISCORD", "メッセージを送信しました(getteaminfoembeds)", false)
@@ -510,14 +525,15 @@ client.on('interactionCreate', async interaction => {
         const steamid = options.getString("steamid");
         
         steamapi.getUserSummary(steamid).then(s => {
-            const steamplayerinfoembed = new MessageEmbed()
-             .setColor('RANDOM')
-             .setThumbnail(s.avatar.large)
-             .setTitle("**" + s.nickname + "**の情報")
-             .setURL(s.url)
-             .setDescription("**SteamID**: " + s.steamID + "\n**アカウントを作成した日**: " + UnixtoDate(s.created) + "\n**最終ログイン時間**: " + UnixtoDate(s.lastLogOff))
-
-            if(s.personaState === 1) {
+            steamapi.getUserOwnedGames(steamid, C.steam.rust).then(c => {
+             const steamplayerinfoembed = new MessageEmbed()
+              .setColor('RANDOM')
+              .setThumbnail(s.avatar.large)
+              .setTitle("**" + s.nickname + "**の情報")
+              .setURL(s.url)
+              .setDescription("**SteamID**: " + s.steamID + "\n**アカウントを作成した日**: " + UnixtoDate(s.created) + "\n**最終ログイン時間**: " + UnixtoDate(s.lastLogOff) + "\nRustプレイ時間: " + mintohour(c[0].playTime) + "時間\n過去2週間のプレイ時間: " + mintohour(c[0].playTime2) + "時間")
+              
+              if(s.personaState === 1) {
                 steamplayerinfoembed.addFields({
                     name: "現在のステータス", value: "🟢 Online", inline: true
                 }) 
@@ -573,6 +589,7 @@ client.on('interactionCreate', async interaction => {
             
             interaction.reply({ embeds: [steamplayerinfoembed] });
             print('INFO', `メッセージを送信しました(steamplayerinfoembed:` + s.nickname + ")", false);
+            })
         });
     };
 });
