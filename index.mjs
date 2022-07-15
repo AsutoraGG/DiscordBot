@@ -23,7 +23,6 @@ import * as url from 'url';
 import request from 'request';
 import SteamAPI from 'steamapi';
 import discordrpc from 'discord-rpc';
-import FacepunchCommits from 'facepunch-commits';
 import r6 from 'r6s-stats-api';
 
 
