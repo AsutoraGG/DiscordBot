@@ -3,7 +3,7 @@ import { readFile } from 'fs/promises';
 import fs from 'fs';
 import setTitle from 'node-bash-title';
 import chalkAnimation from 'chalk-animation';
-import { Client, Intents, Message, MessageActionRow, MessageButton, MessageEmbed, Presence } from 'discord.js';
+import { Channel, Client, Intents, Message, MessageActionRow, MessageButton, MessageEmbed, Presence } from 'discord.js';
 import RustPlus from '@liamcottle/rustplus.js';
 import print from './tool/print.mjs';
 import keypress from 'keypress';
@@ -22,6 +22,11 @@ var rustplus = new RustPlus(C.rp.ip, C.rp.port, C.rp.id, C.rp.token);
 const sleep = (ms = C.js.waittime) => new Promise((r) => setTimeout(r, ms));
 const client = new Client({ intents: ["GUILDS", "GUILD_MESSAGES", "GUILD_VOICE_STATES"] });
 const steamapi = new SteamAPI(C.steam.token);
+const option1 = { //case.json(961話~最新話まで)
+    url: "https://www.ytv.co.jp/conan/data/case.json",
+    method: 'GET',
+    accept: 'application/json'
+};
 const t = new Date();
 keypress(process.stdin);
 process.stdin.setRawMode(true);
@@ -73,6 +78,7 @@ client.on('ready', () => {
     console.clear();
     setTitle('😅 Bot Console');
     print('NONE', `📃 プログラムを終了するには"${C.js.exitkey}"を押してください`, false);
+    print('NONE', '🥺 getconanは現在開発途中です', false);
     print("SUCCESS", `Loginに成功→${client.user.tag}`, false);
     client.user.setActivity(`*help`, { type: "WATCHING" })
     const gg = client.guilds.cache.get(C.discord.guildid);
@@ -190,58 +196,29 @@ client.on('ready', () => {
     });
 });
 
+//こなんが見れるようになったら |秒,分,時,日,月,週| (0 30 18 * * 1)
+const conan = corn.schedule(`0 30 18 * * *`, () => {
+    print('CONAN', "コナンの放送が終了しました。1分後最新話が無料で視聴可能になります", false);
+    setTimeout(() => {
+        request(option1, function(error, response) {
+            const data = JSON.parse(response.body);
+            const embed = new MessageEmbed()
+            .setTitle('最新話: 「**' + data[1].data.episode + '話' + data[1].data.title + '**」が視聴可能になりました')
+            .setColor("#00C09A")
+            .setImage(`https://www.ytv.co.jp${data[1].data.thumbnail}`)
+            .setDescription('**[ここ](https://www.ytv.co.jp/mydo/conan/)から視聴可能です**\n' + data[1].data.conan_story) 
+            client.guilds.cache.get("815573176653709332").channels.cache.get("815603507578404894").send({ embeds: [embed] })
+        });
+        print('CONAN', "コナンが無料で視聴可能になりました。", false)
+    }, 60000);
+});
+
 client.on('messageCreate', (msg) => {
     if (msg.author.bot) return;
     if (!msg.content.startsWith(C.discord.PREFIX)) return;
     let args = msg.content.substring(C.discord.PREFIX.length).split(" ");
 
-    rustplus.getMapMarkers((message) => {
-        var cargoActive = false;
-        if (cargoActive === false) {
-            for (let marker of message.response.mapMarkers.markers) {
-                if (marker.type === 5) {
-                    cargoActive = true;
-                    break;
-                }
-            }
-            if (cargoActive) {
-                if (C.rp.notification.ingame.n === true) {
-                    print('RUST', "Cargoがスポーンしました", true);
-                    print('RUST', "Cargoがスポーンしました", false);
-                    msg.channel.send('Cargoがスポーンしました');
-
-                }
-                else {
-                    print('RUST', "Cargoがスポーンしました", false);
-                }
-            }
-        }
-        else {
-            let cargoLeft = true;
-            for (let marker of message.response.mapMarkers.markers) {
-                if (marker.type === 5) {
-                    cargoLeft = false;
-                    break;
-                }
-            }
-
-            if (cargoLeft) {
-                cargoActive = false;
-                if (C.rp.notification.ingame.n === true) {
-                    print('RUST', "Cargoはマップから消えました", true);
-                    print('RUST', "Cargoはマップから消えました", false)
-                }
-                else {
-                    print('RUST', "Cargoはマップから消えました", false)
-                }
-            }
-        }
-    });
-    rustplus.on('message', (message) => {
-        if(message.broadcast && message.broadcast.teamMessage){
-          console.log(message.broadcast.teamMessage);
-        }
-      });
+    conan.start();
 
     switch (args[0]) {
         case "appid":
@@ -552,11 +529,6 @@ client.on('interactionCreate', async interaction => {
     };
     if(commandName === 'getconan') {
         const count = interaction.options.getNumber('count');
-        const option1 = { //case.json(961話~最新話まで)
-            url: "https://www.ytv.co.jp/conan/data/case.json",
-            method: 'GET',
-            accept: 'application/json'
-        };
         const option2 = { //story.json(1話~960)
             url: "https://www.ytv.co.jp/conan/data/story.json",
             method: 'GET',
@@ -564,7 +536,6 @@ client.on('interactionCreate', async interaction => {
         };
 
         if(count <= 129) {
-            print('INFO', "129以下なのでrequestoption1を使用します", false);
             request(option1, function(error, response) {
                 var date = JSON.parse(response.body);
                 const embed = new MessageEmbed()
@@ -575,18 +546,16 @@ client.on('interactionCreate', async interaction => {
                  .setDescription(date[count].data.conan_story)
                  .setTimestamp(Date.now())
                 interaction.reply({ embeds: [embed] });
-                print('DISCORD', "embedを送信", false);
+                print('DISCORD', "embedを送信(129以下)", false);
             });
         } else {
-            print('INFO', "129以上なのでrequestoption2を使用します", false);
             request(option2, function(error, response){
                 const data = JSON.parse(response.body);
                 const embed = new MessageEmbed()
                  .setTitle("第" + data.item[count].story_num + "話 「" + data.item[count].title + "」")
                  .setColor('FUCHSIA')
                 interaction.reply({ embeds: [embed] });
-                print('DISCORD', "embedを送信", false);
-                print('INFO', "129以上はBETAバージョンです", false);
+                print('DISCORD', "embedを送信(129以上)", false);
             });
         }
     }
