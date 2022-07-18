@@ -1,17 +1,6 @@
 #!/usr/bin/env node
-/*
-* Player = 1;
-* Explosion = 2;
-* VendingMachine = 3;
-* CH47 = 4;
-* CargoShip = 5;
-* Crate = 6;
-* GenericRadius = 7;
-* PatrolHelicopter = 8;
-*/
 import { readFile } from 'fs/promises';
-import fs, { read } from 'fs';
-import {createAudioPlayer, joinVoiceChannel, createAudioResource } from '@discordjs/voice'
+import fs from 'fs';
 import setTitle from 'node-bash-title';
 import chalkAnimation from 'chalk-animation';
 import { Client, Intents, Message, MessageActionRow, MessageButton, MessageEmbed, Presence } from 'discord.js';
@@ -22,50 +11,39 @@ import chalk from 'chalk';
 import * as url from 'url';
 import request from 'request';
 import SteamAPI from 'steamapi';
-import discordrpc from 'discord-rpc';
 import r6 from 'r6s-stats-api';
+import corn from 'node-cron';
 
 
 //#region const
-const RPC = new discordrpc.Client({ transport: 'ipc' });
 const __dirname = url.fileURLToPath(new URL('.', import.meta.url));
 const C = JSON.parse(await readFile(new URL('./config.json', import.meta.url)));
 var rustplus = new RustPlus(C.rp.ip, C.rp.port, C.rp.id, C.rp.token);
 const sleep = (ms = C.js.waittime) => new Promise((r) => setTimeout(r, ms));
 const client = new Client({ intents: ["GUILDS", "GUILD_MESSAGES", "GUILD_VOICE_STATES"] });
 const steamapi = new SteamAPI(C.steam.token);
+const t = new Date();
 keypress(process.stdin);
 process.stdin.setRawMode(true);
 process.stdin.resume();
 
 //#endregion
 
-discordrpc.register(C.discord.clientid);
-
-async function setActivity() {
-    if (!RPC) return;
-    RPC.setActivity({
-        details: `EZEZEZEZEZEZEZEZEZEZEZ`,
-        state: `BOT is Online`,
-        startTimestamp: Date.now(),
-        largeImageKey: 'large',
-        largeImageText: "😶",
-        buttons: [
-            {
-                label: "Source Code",
-                url: 'https://github.com/AsutoraGG/DiscordBot'
-            }
-        ]
-    })
-};
-
-function UnixtoDate(unix) {
+/**
+ * 
+ * @param {string} unix 
+ * @param {boolean} t 
+ * @returns Unixをデータにします
+ */
+function UnixtoDate(unix, t) {
     var date = new Date(unix * 1000);
     var hours = date.getHours();
     let year = date.getFullYear();
     var minutes = "0" + date.getMinutes();
     var ampm = hours >= 12 ? '午後' : '午前';
+    var ampme = hours >= 12? 'AM' : 'PM';
     var formattedTime = year + "/" + date.toLocaleDateString('ja-JP').slice(5) + " " + ampm + ':' + hours + '時' + minutes.substr(-2) + '分';
+    var hourmin = ampme + hours + ":" + minutes;
     return formattedTime;
 }
 
@@ -79,10 +57,10 @@ function mintohour(n) {
 }
 
 async function title() {
-    setTitle('Loading..');
     console.clear();
+    setTitle('Loading..');
     console.log(chalk.white.underline("このプログラムを使用する場合Terminalで使用することをお勧めします"));
-    const RainbowTitle = chalkAnimation.radar(`${C.js.welcometext}`);
+    const RainbowTitle = chalkAnimation.rainbow(`${C.js.welcometext}`);
     await sleep();
     RainbowTitle.stop();
 };
@@ -93,7 +71,6 @@ if(C.js.title === true) {
 
 client.on('ready', () => {
     console.clear();
-    setActivity();
     setTitle('😅 Bot Console');
     print('NONE', `📃 プログラムを終了するには"${C.js.exitkey}"を押してください`, false);
     print("SUCCESS", `Loginに成功→${client.user.tag}`, false);
@@ -199,6 +176,18 @@ client.on('ready', () => {
             }
         ]
     });
+    commands?.create({
+        name: "getconan",
+        description: "コナンのエピソード情報を取得",
+        options: [
+            {
+                name: "count",
+                description: "数字を入力してください(1~129以下)",
+                type: "NUMBER",
+                require: true
+            }
+        ]
+    });
 });
 
 client.on('messageCreate', (msg) => {
@@ -207,43 +196,52 @@ client.on('messageCreate', (msg) => {
     let args = msg.content.substring(C.discord.PREFIX.length).split(" ");
 
     rustplus.getMapMarkers((message) => {
-        let cargo = false;
-        if(cargo === false) {
-            for(let marker of message.response.mapMarkers.markers) {
-                if (marker.type === '5') {
-                cargo = true;
-                print('RUST', "Cargoを確認。cargoをtrueにしました", false)
-                break;
-            }
-            if(cargo === true) {
-                if(C.rp.notification.cargo === true) {
-                    print('RUST', "Cargoシップがスポーンしました", true);
-                } else {
-                    print('RUST', "Cargoシップがスポーンしました", false);
-                }
-            };
-        }
-           
-        } else {
-            let nocargo = true;
-            for(let marker of message.response.mapMarkers.markers) {
+        var cargoActive = false;
+        if (cargoActive === false) {
+            for (let marker of message.response.mapMarkers.markers) {
                 if (marker.type === 5) {
-                    nocargo = false;
-                    print('RUST', "Cargoは見えなくなりました。nocargoをfalseに切り替え", false);
+                    cargoActive = true;
                     break;
                 }
-            };
-            if(nocargo === false) {
-                nocargo = false;
-                if(C.rp.notification.cargo === true) {
-                    print('RUST', "Cargoシップはマップから消えました", true);
-                } else {
-                    print('RUST', "Cargoシップはマップから消えました", false);
-                }
-            };
-        }
+            }
+            if (cargoActive) {
+                if (C.rp.notification.ingame.n === true) {
+                    print('RUST', "Cargoがスポーンしました", true);
+                    print('RUST', "Cargoがスポーンしました", false);
+                    msg.channel.send('Cargoがスポーンしました');
 
-    })
+                }
+                else {
+                    print('RUST', "Cargoがスポーンしました", false);
+                }
+            }
+        }
+        else {
+            let cargoLeft = true;
+            for (let marker of message.response.mapMarkers.markers) {
+                if (marker.type === 5) {
+                    cargoLeft = false;
+                    break;
+                }
+            }
+
+            if (cargoLeft) {
+                cargoActive = false;
+                if (C.rp.notification.ingame.n === true) {
+                    print('RUST', "Cargoはマップから消えました", true);
+                    print('RUST', "Cargoはマップから消えました", false)
+                }
+                else {
+                    print('RUST', "Cargoはマップから消えました", false)
+                }
+            }
+        }
+    });
+    rustplus.on('message', (message) => {
+        if(message.broadcast && message.broadcast.teamMessage){
+          console.log(message.broadcast.teamMessage);
+        }
+      });
 
     switch (args[0]) {
         case "appid":
@@ -255,24 +253,6 @@ client.on('messageCreate', (msg) => {
                 {name: "Rustのappid", value: "252490"}
              );
             msg.channel.send({ embeds: [ appidembed ]});
-        break;
-        case "ez":
-            if (!msg.member.voice?.channel) {
-                print('ERROR', "Voiceチャンネルに接続してください", false);
-                msg.channel.send("😨 Error: ボイスチャンネルに接続してください");
-                console.log(msg.member.voice.channelId + "\n" + msg.guild + "\n" + msg.guild.voiceAdapterCreator);
-            };
-            const connection = joinVoiceChannel({
-                channelId: msg.member.voice.channel.id,
-                guildId: msg.guild.id,
-                adapterCreator: msg.guild.voiceAdapterCreator
-            });
-
-            const player = createAudioPlayer();
-            const resource = createAudioResource('./resource/mp3/ez.mp3');
-            player.play(resource);
-            connection.subscribe(player);
-            print('INFO', `ez.mp3を再生`, false);
         break;
         case "getsherry":
             const sherryembed = new MessageEmbed()
@@ -289,17 +269,13 @@ client.on('messageCreate', (msg) => {
             msg.channel.send({embeds: [loadingsherryembed]}).then(e => {
                 setTimeout(function () {
                     e.edit({ embeds: [sherryembed] }).then(() => {
-                     print('INFO', "シェリーの一言を送信!", false);
+                     print('DISCORD', "シェリーの一言を送信!", false);
                     })
                 }, 3500);
 
             })
         break;
         case "dev":
-            steamapi.getUserOwnedGames('76561199131174943', "252490").then(g => {
-                console.log(g[0].playTime2);
-            });
-        break;
     };
 });
 
@@ -307,7 +283,7 @@ client.on('interactionCreate', async interaction => {
     if (!interaction.isCommand()) {
         return;
     }
-    const { commandName, options, channel } = interaction;
+    const { commandName, options, channel} = interaction;
     if(commandName == 'help') {
         const helpembed = new MessageEmbed()
         .setColor('AQUA')
@@ -357,7 +333,6 @@ client.on('interactionCreate', async interaction => {
          .setColor("GOLD")
          .setDescription(`メッセージを送信: ${Message}`);
         
-        print('INFO', `受け取ったメッセージ: ${Message}`, false);
         rustplus.sendTeamMessage(`${Message}`);
         interaction.reply({embeds: [sendMessageEmbed]});
         print("DISCORD", "メッセージを送信しました(sendMessageEmbed)", false)
@@ -481,7 +456,7 @@ client.on('interactionCreate', async interaction => {
         const platform = options.getString("platform")
 
         const general = await r6.general(platform, username);
-        console.log(chalk.blue.italic(`PlayerName: ${username} | PlatForm: ${platform}`));
+        //console.log(chalk.blue.italic(`PlayerName: ${username} | PlatForm: ${platform}`));
         //console.log(`${general.url}`)
 
         const r6infoembed = new MessageEmbed()
@@ -563,16 +538,62 @@ client.on('interactionCreate', async interaction => {
                         print('ERROR', s.nickname + "は現在プレイ時間を非公開にしています。", false)
                     };
                     interaction.reply({ embeds: [steamplayerinfoembed] });
-                    print('INFO', `メッセージを送信しました(steamplayerinfoembed:` + s.nickname + ")", false);
+                    print('DISCORD', `メッセージを送信しました(steamplayerinfoembed:` + s.nickname + ")", false);
             });
             })
         });
     };
+    if(commandName === 'play') {
+        if(!interaction.member.voice.channel){
+            interaction.reply('🔊ボイスチャンネルに接続してください');
+            print('ERROR', "Voiceチャンネルに接続してから実行してください", false);
+        };
+        const song = interaction.options.getString('song');
+    };
+    if(commandName === 'getconan') {
+        const count = interaction.options.getNumber('count');
+        const option1 = { //case.json(961話~最新話まで)
+            url: "https://www.ytv.co.jp/conan/data/case.json",
+            method: 'GET',
+            accept: 'application/json'
+        };
+        const option2 = { //story.json(1話~960)
+            url: "https://www.ytv.co.jp/conan/data/story.json",
+            method: 'GET',
+            accept: 'application/json'
+        };
+
+        if(count <= 129) {
+            print('INFO', "129以下なのでrequestoption1を使用します", false);
+            request(option1, function(error, response) {
+                var date = JSON.parse(response.body);
+                const embed = new MessageEmbed()
+                 .setTitle('第' + date[count].data.episode + '話 「' + date[count].data.title + '」')
+                 .setURL('https://www.ytv.co.jp/mydo/conan/')
+                 .setColor('FUCHSIA')
+                 .setImage(`https://www.ytv.co.jp${date[count].data.thumbnail}`)
+                 .setDescription(date[count].data.conan_story)
+                 .setTimestamp(Date.now())
+                interaction.reply({ embeds: [embed] });
+                print('DISCORD', "embedを送信", false);
+            });
+        } else {
+            print('INFO', "129以上なのでrequestoption2を使用します", false);
+            request(option2, function(error, response){
+                const data = JSON.parse(response.body);
+                const embed = new MessageEmbed()
+                 .setTitle("第" + data.item[count].story_num + "話 「" + data.item[count].title + "」")
+                 .setColor('FUCHSIA')
+                interaction.reply({ embeds: [embed] });
+                print('DISCORD', "embedを送信", false);
+                print('INFO', "129以上はBETAバージョンです", false);
+            });
+        }
+    }
 });
 
 process.stdin.on('keypress', function (ch, key) {
     if(key.name == C.js.exitkey) {
-        console.clear();
         process.exit(1);
     } else if(key.name == 'c') {
         console.log("Consoleをキレイさっぱりにします")
@@ -584,5 +605,4 @@ if(C.rp.connect === true) {
     rustplus.connect();
 };
 
-RPC.login({ clientId: C.discord.clientid });
 client.login(C.discord.BOTTOKEN);
