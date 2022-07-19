@@ -17,6 +17,7 @@ import corn from 'node-cron';
 
 //#region const
 const __dirname = url.fileURLToPath(new URL('.', import.meta.url));
+const shock = JSON.parse(await readFile(new URL('./resource/shock.json', import.meta.url)));
 const C = JSON.parse(await readFile(new URL('./config.json', import.meta.url)));
 var rustplus = new RustPlus(C.rp.ip, C.rp.port, C.rp.id, C.rp.token);
 const sleep = (ms = C.js.waittime) => new Promise((r) => setTimeout(r, ms));
@@ -194,6 +195,24 @@ client.on('ready', () => {
             }
         ]
     });
+    commands?.create({
+        name: "spammer",
+        description: "スパムを開始!(4000ミリ秒ごとに)",
+        options: [
+            {
+                name: "message",
+                description: "スパムしたい内容を入力してください",
+                type: "STRING",
+                require: true
+            },
+            {
+                name: "count",
+                description: "スパムしたい回数を入力してください",
+                type: "NUMBER",
+                require: true
+            }
+        ]
+    });
 });
 
 //こなんが見れるようになったら |秒,分,時,日,月,週| (0 30 18 * * 1)
@@ -252,7 +271,21 @@ client.on('messageCreate', (msg) => {
 
             })
         break;
-        case "dev":
+        case "gore":
+            const randnum = 0 + Math.floor( Math.random() * 6 );
+            const count = randnum;
+            console.log(count);
+            //console.log(shock.shocklist[count].title);
+            const embed = new MessageEmbed()
+             .setColor('DARK_BUT_NOT_BLACK')
+             .setTitle(`**${shock.shocklist[count].title}**`)
+             .setURL(`${shock.shocklist[count].link}`)
+             .setDescription(`${shock.shocklist[count].description}`)
+             .addFields({
+                name: "グロレベル", value: `${shock.shocklist[count].level}`
+             })
+            msg.channel.send({embeds: [embed]});
+        break;
     };
 });
 
@@ -367,7 +400,7 @@ client.on('interactionCreate', async interaction => {
             request(options, function(error, response) {
                 //console.log(response);
                 const data = JSON.parse(response.body);
-                print('INFO', `ID:${data.id} | Size:${info.mapSize} | Seed:${info.seed}`, false);
+                //debug print('INFO', `ID:${data.id} | Size:${info.mapSize} | Seed:${info.seed}`, false);
                 const getInfoEmbed = new MessageEmbed()
                 .setColor("LUMINOUS_VIVID_PINK")
                 .setTitle("現在登録中のサーバー情報")
@@ -558,6 +591,29 @@ client.on('interactionCreate', async interaction => {
                 print('DISCORD', "embedを送信(129以上)", false);
             });
         }
+    };
+    if(commandName === 'spammer') {
+        const count = interaction.options.getNumber('count');
+        const message = interaction.options.getString('message');
+        let c = 0;
+        const embed = new MessageEmbed()
+         .setTitle('Spammerを起動')
+         .setColor('DARK_GREY')
+         .setDescription('↓このメッセージを送信します↓\n' + message);
+
+        interaction.reply({ embeds: [embed] });
+        function msg(message) {
+            print('INFO', message, true);
+            print('INFO', `スパムを送信(${c}/${count})`, false);
+        }
+        const spam = setInterval(() => {
+            let num = 1;
+            msg(message);
+            if(++c > count) {
+                clearInterval(spam);
+                print('INFO', "スパムを停止", false);
+            }
+        }, 3000)
     }
 });
 
@@ -566,7 +622,12 @@ process.stdin.on('keypress', function (ch, key) {
         process.exit(1);
     } else if(key.name == 'c') {
         console.log("Consoleをキレイさっぱりにします")
-        setTimeout(() => console.clear(), 5000)
+        setTimeout(() => {
+            console.clear();
+            print('NONE', `📃 プログラムを終了するには"${C.js.exitkey}"を押してください`, false);
+            print('NONE', '🥺 getconanは現在開発途中です', false);
+            print("SUCCESS", `Loginに成功→${client.user.tag}`, false);
+        }, 5000)
     }
 });
 
